@@ -1,0 +1,5 @@
+C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\bin\Release\SignTest.exe.config
+C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\bin\Release\SignTest.exe
+C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\bin\Release\SignTest.pdb
+C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\obj\Release\SignTest.exe
+C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\obj\Release\SignTest.pdb
