@@ -46,11 +46,12 @@
     <Compile Include="Model\ArgsHelper\ArgsReader.cs" />
     <Compile Include="Model\Data\Block.cs" />
     <Compile Include="Model\Data\SHA256Block.cs" />
-    <Compile Include="Model\Threading\ExceptionEventArgs.cs" />
     <Compile Include="Model\Threading\QueueWithLock.cs" />
     <Compile Include="Model\SignatureInfo.cs" />
     <Compile Include="Model\SignatureWorker.cs" />
-    <Compile Include="Model\Threading\Tuple.cs" />
+    <Compile Include="Model\Threading\ThreadManager.cs" />
+    <Compile Include="Model\Threading\ThreadsExtension.cs" />
+    <Compile Include="Model\Threading\WaitThreadResult.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

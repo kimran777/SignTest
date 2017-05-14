@@ -10,13 +10,14 @@ using System.Threading;
 namespace SignTest.Model
 {
     class SignatureWorker
-    {
-        private event EventHandler<ExceptionEventArgs> ExcInThreadHappened;
+    { 
         private readonly int _threadForHash;
-        private QueueWithLock<SHA256Block>[] _hashProducersConsumers;
+        private Stream _inputStream;
+        private QueueWithLock<SHA256Block> _hashProducersConsumers;
         private long _maxQueuePerThread;
         private long _maxBufferSize = 104857600;
-        private List<Exception> _errors = new List<Exception>();
+        private Queue<Exception> _errors = new Queue<Exception>();
+
         public long BlockSize
         {
             get;
@@ -30,12 +31,17 @@ namespace SignTest.Model
 
         public SignatureWorker(FileInfo inputFileInfo, long blockSize)
         {
+            if(inputFileInfo == null)
+            {
+                throw new ArgumentNullException("inputFileInfo");
+            }
             InputFileInfo = inputFileInfo;
-
+            
             if (blockSize == 0)
             {
                 throw new ArgumentException("Размер блока должен быть больше 0", "blockSize");
             }
+
             BlockSize = blockSize;
 
             _threadForHash = GetCountThreadForHash();
@@ -43,172 +49,97 @@ namespace SignTest.Model
             //with small blocks too many memory needed
             long denum = BlockSize > 512 ? BlockSize : 512;
 
-            _maxQueuePerThread = _maxBufferSize / _threadForHash / denum;
-
+            _maxQueuePerThread = _maxBufferSize /  denum;
+            
             if (_maxQueuePerThread == 0)
             {
                 _maxQueuePerThread = 1;
             }
 
 
-            _hashProducersConsumers = new QueueWithLock<Data.SHA256Block>[_threadForHash];
-            for (int i = 0; i < _threadForHash; i++)
-            {
-                _hashProducersConsumers[i] = new QueueWithLock<Data.SHA256Block>(_maxQueuePerThread);
-            }
-
+            _hashProducersConsumers = new QueueWithLock<SHA256Block>(_maxQueuePerThread);
+            
         }
 
 
 
         public void Start()
         {
-            if (!InputFileInfo.Exists)
+            _inputStream = _inputStream = InputFileInfo.OpenRead();
+
+            var workerThreads = ThreadManager.GetSafeThreads(_threadForHash, HashWork, ExceptionHandler);
+            workerThreads.StartThreads();
+            
+            Thread writerThreads = ThreadManager.GetSafeThread(WriteOutHash, ExceptionHandler);
+            writerThreads.Start();
+                        
+            workerThreads.WaitThreads().ContinueWithOneTime(() =>
             {
-                throw new FileNotFoundException(string.Format("Файл {0} не найден", InputFileInfo.FullName));
-            }
-
-
-            Thread[] workerThreads = new Thread[_threadForHash];
-            for (int i = 0; i < _threadForHash; i++)
-            {
-                workerThreads[i] = new Thread(HashWork);
-            }
-
-            long blockCounts = GetBlockCounts(InputFileInfo.Length, BlockSize);
-
-            Thread writerThreads = new Thread(WriteOutHash);
-            writerThreads.Start(blockCounts);
-
-
-            ExcInThreadHappened += (sender, arg) =>
-            {
-                lock (_errors)
-                {
-                    _errors.Add(arg.ExceptionInThread);
-                }
-
-                for (int i = 0; i < _threadForHash; i++)
-                {
-                    _hashProducersConsumers[i].Stop();
-                }
-
-            };
-
-
-            for (int i = 0; i < _threadForHash; i++)
-            {
-                workerThreads[i].Start(Tuple.Create(i, blockCounts));
-            }
-
-            for (int i = 0; i < _threadForHash; i++)
-            {
-                workerThreads[i].Join();
-            }
-
-            for (int i = 0; i < _threadForHash; i++)
-            {
-                _hashProducersConsumers[i].Stop();
-            }
-
+                _hashProducersConsumers.Stop();
+            });
 
             writerThreads.Join();
 
+            _inputStream.Close();
 
-            lock (_errors)
+            if (_errors.Any())
             {
-                if (_errors.Count > 0)
-                {
-                    throw _errors.First();
-                }
+                throw _errors.First();
             }
 
         }
 
-
-
-        private void HashWork(object threadIndexAndBlockCounts)
+        int blockIter = 0;
+        private void HashWork()
         {
-
-            try
+            byte[] blockBuffer = new byte[BlockSize];
+            int readedData = 0;
+            int blockIndex = 0;
+            while (true)
             {
-                Tuple<int, long> param = threadIndexAndBlockCounts as Tuple<int, long>;
-                int threadIndex = param.First;
-                long blockCounts = param.Second;
-
-                using (var threadInputStream = InputFileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                lock (_inputStream)
                 {
-                    threadInputStream.Seek(threadIndex * BlockSize, SeekOrigin.Begin);
+                    blockIndex = blockIter;
+                    readedData = _inputStream.Read(blockBuffer, 0, blockBuffer.Length);
 
-                    long iterOffset = (_threadForHash - 1) * BlockSize;
-
-                    int readedData = 0;
-
-                    byte[] blockBuffer = new byte[BlockSize];
-
-
-
-                    for (long blockIndex = threadIndex; blockIndex < blockCounts; blockIndex += _threadForHash)
-                    {
-                        readedData = threadInputStream.Read(blockBuffer, 0, blockBuffer.Length);
-
-                        _hashProducersConsumers[threadIndex].Enqueue(new SHA256Block(blockBuffer, readedData, blockIndex));
-
-                        //if (threadInputStream.Position + iterOffset >= threadInputStream.Length)
-                        //{
-                        //    break;
-                        //}
-
-                        threadInputStream.Seek(iterOffset, SeekOrigin.Current);
-                    }
-
-
-
-                }
-
-            }
-            catch (Exception exc)
-            {
-                RaiseExcInThreadHappened(exc);
-            }
-        }
-
-        private void WriteOutHash(object blocksCountParameter)
-        {
-            long blocksCount = (long)blocksCountParameter;
-
-            for (long i = 0; i < blocksCount; i += _threadForHash)
-            {
-                for (int thId = 0; thId < _threadForHash; thId++)
-                {
-
-                    if (i + thId >= blocksCount)
+                    if (readedData == 0 && blockIndex != 0)
                     {
                         break;
                     }
-
-
-                    var block = _hashProducersConsumers[thId].Dequeue();
-
-                    if (block == null)
-                    {
-                        return;
-                    }
-
-
-                    Console.WriteLine("block #{0,-15}: {1}", block.Index, block.StrSHA256);
-
+                    blockIter++;
                 }
 
+
+                if(blockIndex == 1500)
+                {
+                    throw new NotImplementedException();
+                }
+
+                _hashProducersConsumers.Enqueue(new SHA256Block(blockBuffer, readedData, blockIndex));
+
+            }
+        }
+
+        private void WriteOutHash()
+        {
+
+            while(true)
+            {
+                var block = _hashProducersConsumers.Dequeue();
+                if (block == null)
+                {
+                    return;
+                }
+
+                Console.WriteLine("block #{0,-15}: {1}", block.Index, block.StrSHA256);
+                block = null;
             }
 
         }
-
-
-
+        
         private int GetCountThreadForHash()
         {
-            if (Environment.ProcessorCount >= 2)
+            if (Environment.ProcessorCount > 1)
             {
                 return Environment.ProcessorCount - 1;
             }
@@ -217,33 +148,19 @@ namespace SignTest.Model
                 return 1;
             }
         }
-        private long GetBlockCounts(long length, long blockSize)
+                
+                
+        private void ExceptionHandler(Exception exception)
         {
-            if (length == 0)
+            lock (_errors)
             {
-                return 1;
+                _errors.Enqueue(exception);
             }
 
+            _hashProducersConsumers.Abort();
 
-            if (length % blockSize == 0)
-            {
-                return length / blockSize;
-            }
-            else
-            {
-                return length / blockSize + 1;
-            }
-
+            Thread.CurrentThread.Abort();
         }
 
-
-
-        private void RaiseExcInThreadHappened(Exception e)
-        {
-            if (ExcInThreadHappened != null)
-            {
-                ExcInThreadHappened(this, new ExceptionEventArgs(e));
-            }
-        }
     }
 }

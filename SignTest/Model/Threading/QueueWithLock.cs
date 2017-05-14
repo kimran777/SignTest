@@ -38,10 +38,23 @@ namespace SignTest.Model.Threading
                 {
                     throw new InvalidOperationException("Queue is stopped");
                 }
+                if (_isAbort)
+                {
+                    throw new InvalidOperationException("Queue is aborted");
+                }
 
                 while (_queue.Count >= MaxSize)
                 {
                     Monitor.Wait(_lockPoint);
+
+                    if (_isStopped)
+                    {
+                        throw new InvalidOperationException("Queue is stopped");
+                    }
+                    if (_isAbort)
+                    {
+                        throw new InvalidOperationException("Queue is aborted");
+                    }
                 }
 
                 //queue.Add(task);
