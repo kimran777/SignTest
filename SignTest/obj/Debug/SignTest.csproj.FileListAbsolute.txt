@@ -4,3 +4,6 @@ C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\obj\Debug
 C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\obj\Debug\SignTest.exe
 C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\obj\Debug\SignTest.pdb
 C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\bin\Debug\SignTest.exe.config
+D:\SignTest\SignTest\SignTest\bin\Debug\SignTest.exe.config
+D:\SignTest\SignTest\SignTest\obj\Debug\SignTest.exe
+D:\SignTest\SignTest\SignTest\obj\Debug\SignTest.pdb

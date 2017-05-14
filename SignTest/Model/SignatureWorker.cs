@@ -108,13 +108,7 @@ namespace SignTest.Model
                     }
                     blockIter++;
                 }
-
-
-                if(blockIndex == 1500)
-                {
-                    throw new NotImplementedException();
-                }
-
+                                
                 _hashProducersConsumers.Enqueue(new SHA256Block(blockBuffer, readedData, blockIndex));
 
             }
@@ -132,7 +126,6 @@ namespace SignTest.Model
                 }
 
                 Console.WriteLine("block #{0,-15}: {1}", block.Index, block.StrSHA256);
-                block = null;
             }
 
         }
