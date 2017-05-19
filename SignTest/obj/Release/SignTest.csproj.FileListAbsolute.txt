@@ -8,3 +8,4 @@ D:\SignTest\SignTest\SignTest\obj\Release\SignTest.exe
 D:\SignTest\SignTest\SignTest\obj\Release\SignTest.pdb
 D:\SignTest\SignTest\SignTest\bin\Release\SignTest.exe
 D:\SignTest\SignTest\SignTest\bin\Release\SignTest.pdb
+D:\SignTest\SignTest\SignTest\obj\Release\SignTest.csprojResolveAssemblyReference.cache
