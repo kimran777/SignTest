@@ -65,12 +65,13 @@ namespace SignTest.Model
 
         public void Start()
         {
-            _inputStream = _inputStream = InputFileInfo.OpenRead();
+            _inputStream = InputFileInfo.OpenRead();
 
             var workerThreads = ThreadManager.GetSafeThreads(_threadForHash, HashWork, ExceptionHandler);
             workerThreads.StartThreads();
             
             Thread writerThreads = ThreadManager.GetSafeThread(WriteOutHash, ExceptionHandler);
+            writerThreads.Priority = ThreadPriority.AboveNormal;
             writerThreads.Start();
                         
             workerThreads.WaitThreads().ContinueWithOneTime(() =>

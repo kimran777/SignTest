@@ -7,3 +7,6 @@ C:\Users\kimra\Documents\Visual Studio 2015\Projects\SignTest\SignTest\bin\Debug
 D:\SignTest\SignTest\SignTest\bin\Debug\SignTest.exe.config
 D:\SignTest\SignTest\SignTest\obj\Debug\SignTest.exe
 D:\SignTest\SignTest\SignTest\obj\Debug\SignTest.pdb
+D:\SignTest\SignTest\SignTest\bin\Debug\SignTest.exe
+D:\SignTest\SignTest\SignTest\bin\Debug\SignTest.pdb
+D:\SignTest\SignTest\SignTest\obj\Debug\SignTest.csprojResolveAssemblyReference.cache

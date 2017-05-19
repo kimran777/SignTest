@@ -18,14 +18,14 @@ namespace SignTest.Model.Threading
             }
         }
 
-        public static void StartThreads(this IEnumerable<Thread> threads)
+        public static void StartThreads(this IEnumerable<Thread> threads, ThreadPriority Priority = ThreadPriority.Normal)
         {
             foreach (var thread in threads)
             {
+                thread.Priority = Priority;
                 thread.Start();
             }
         }
-        
         public static IEnumerable<WaitThreadResult> WaitThreads(this IEnumerable<Thread> threads)
         {
             List<WaitThreadResult> waitThreadResult = new List<WaitThreadResult>();
